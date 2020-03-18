@@ -263,6 +263,8 @@ class ProductItem(object):
                     cc_node.slug = slug
                     cc_node.parent_id = parent.id if parent is not None else root_id
                     cc_node.save()
+
+                    cc_node = Category.get(Category.slug == slug)
                 except:
                     pass
 
