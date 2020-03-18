@@ -3,17 +3,9 @@ from peewee import *
 from playhouse.db_url import connect
 import json
 
-from playhouse.pool import PooledMySQLDatabase
-
-
-# esdb = connect(os.environ.get('ESDATABASE') or 'mysql://root:q1w2e3AA@146.148.80.218:3306/amazon_reviews')
-#
 
 def init_database():
-    db = PooledMySQLDatabase(
-        "amazon_reviews", user="root", host="146.148.80.218", port=3306, password="q1w2e3AA",
-        max_connections=8, stale_timeout=300)
-    return db
+    return connect(os.environ.get('ESDATABASE') or 'mysql://root:q1w2e3AA@146.148.80.218:3306/amazon_reviews')
 
 
 esdb = init_database()
@@ -49,6 +41,7 @@ class Product(ESBaseModel):
     size = CharField()
     packageqty = CharField()
     image = CharField()
+    images = TextField()
     is_prime = IntegerField()
     binding = CharField()
 

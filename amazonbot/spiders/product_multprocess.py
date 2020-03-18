@@ -2,13 +2,14 @@ import datetime
 import traceback
 from multiprocessing import Process, Queue, current_process
 
+from amazonbot.spiders.product_spider import ProductSpider
 from amazonbot.spiders.review_spider import ReviewSpider
 from lib.logger import get_logger
 from lib.models import Product, init_database
 from lib.utils import get_browser
 
 
-class ReviewSpiderMultipleProcess(object):
+class ProductSpiderMultipleProcess(object):
     logger = get_logger(__name__)
 
     def __init__(self, process_num=5, country='US'):
@@ -19,9 +20,7 @@ class ReviewSpiderMultipleProcess(object):
         try:
             for product in iter(work_queue.get, 'STOP'):
                 try:
-                    ReviewSpider(asin=product.asin, browser=browser, country=self.country, db=db).start_requests()
-                    product.review_last_checked = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                    product.save()
+                    ProductSpider(asin=product.asin, browser=browser, country=self.country, db=db).start_requests()
                 except Exception as e:
                     print(traceback.format_exc())
                     self.logger.error("%s failed  with: %s" % (current_process().name, e))
@@ -31,10 +30,8 @@ class ReviewSpiderMultipleProcess(object):
             pass
 
     def start_requests(self):
-
         while True:
-            products = Product.select().where(Product.review_last_checked == None).limit(1000)
-
+            products = Product.select().where(Product.name == None).limit(30)
             if len(products) == 0:
                 break
 
@@ -49,9 +46,8 @@ class ReviewSpiderMultipleProcess(object):
                 browser = get_browser(profile=None, disable_js=True, disable_image=True, headless=True)
                 p = Process(target=self.worker, args=(work_queue, browser, db))
                 p.start()
-                processes.append([p, browser,db])
+                processes.append([p, browser])
 
             for p in processes:
                 p[0].join()
                 p[1].close()
-                p[2].close()

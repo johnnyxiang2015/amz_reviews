@@ -1,6 +1,5 @@
 import argparse
 
-from amazonbot.spiders.category_multprocess import CategorySpiderMultipleProcess
 from amazonbot.spiders.review_multprocess import ReviewSpiderMultipleProcess
 
 

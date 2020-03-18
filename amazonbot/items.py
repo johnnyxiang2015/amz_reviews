@@ -7,7 +7,7 @@ from peewee import DoesNotExist
 
 from lib import soup_utils
 from lib.constant import HTML_PARSER
-from lib.models import Review
+from lib.models import Review, Product, Category, CategoryProduct
 
 
 class ReviewItem(object):
@@ -113,22 +113,33 @@ class ProductItem(object):
     DESCRIPTION_SELECTOR = '#productDescription'
     IMPORTANT_INFO_SELECTOR = '#importantInformation'
     DETAIL_BULLETS_SELECTOR = '#detail-bullets li'
+    IMAGE_SELECTOR = '.a-spacing-small.item.imageThumbnail img'
 
-    def __init__(self, html):
+    def __init__(self, asin, html):
         self.soup = BeautifulSoup(html, HTML_PARSER)
-
+        self.asin = asin
         self.name = self.parse_name()
-        self.slug = self.create_slug()
+        self.slug = self.create_slug(self.name)
 
         self.brand = self.parse_brand()
         self.price = self.parse_price()
         self.feature_list = self.parse_feature_list()
         self.descriptions = self.parse_description()
         self.categories = self.parse_breadcrumbs()
+
         details = self.parse_detail()
         self.dimensions = details['dimensions'] if 'dimensions' in details else None
         self.upc = details['upc'] if 'upc' in details else None
         self.mpn = details['mpn'] if 'mpn' in details else None
+        self.sales_rank = details['sales_rank'] if 'sales_rank' in details else None
+
+        images = self.parse_images()
+        if len(images) > 0:
+            self.image = images[0]
+            self.images = ";".join(images)
+        else:
+            self.image = None
+            self.images = None
 
     def parse_name(self):
         return soup_utils.find_tag(self.soup, self.TITLE_SELECTOR).text.strip()
@@ -137,9 +148,12 @@ class ProductItem(object):
         return soup_utils.find_tag(self.soup, self.BRAND_SELECTOR).text.strip()
 
     def parse_price(self):
-        price_text = soup_utils.find_tag(self.soup, self.PRICE_SELECTOR).text.strip()
-        price_text = re.sub(r'[^0-9.,\-]', '', price_text)
-        return round(float(price_text), 2)
+        try:
+            price_text = soup_utils.find_tag(self.soup, self.PRICE_SELECTOR).text.strip()
+            price_text = re.sub(r'[^0-9.,\-]', '', price_text)
+            return round(float(price_text), 2)
+        except:
+            return None
 
     def parse_feature_list(self):
         try:
@@ -167,19 +181,29 @@ class ProductItem(object):
             value = parts[1]
             if 'Product Dimensions' == key:
                 details['dimensions'] = value
+
             if 'UPC' == key:
                 details['upc'] = value
             if 'Item model number' == key:
                 details['mpn'] = value
 
+            if 'Sellers Rank' in key:
+                details['sales_rank'] = value.split(" ")[0].replace('#', '').replace(',', '')
+
         return details
 
     def parse_breadcrumbs(self):
-        return soup_utils.find_tag(self.soup, self.BREADCRUMBS_SELECTOR).text.strip()
+        categories = soup_utils.find_tag(self.soup, self.BREADCRUMBS_SELECTOR).text.strip()
+        categories = [c.strip() for c in categories.split('›')]
+        return " > ".join(categories)
 
-    def create_slug(self):
+    def parse_images(self):
+        image_tags = soup_utils.find_tags(self.soup, self.IMAGE_SELECTOR)
+        return [s['src'].replace('_US40_', '_') for s in image_tags]
+
+    def create_slug(self, text):
         # print text
-        t = self.name.replace(" ", "-").strip().lower()
+        t = text.replace(" ", "-").strip().lower()
         t = t.replace("&", "-")
         t = re.sub(r'[^a-z0-9\-]', '', t)
 
@@ -189,7 +213,60 @@ class ProductItem(object):
         return t
 
     def save(self):
-        pass
+        try:
+            product = Product.get(Product.asin == self.asin)
+        except:
+            product = Product()
+            product.asin = self.asin
+
+        product.name = self.name
+        product.brand = self.brand
+        product.price = self.price
+        product.description = self.feature_list
+        product.dimension = self.dimensions
+        product.slug = self.slug[0:120] if len(self.slug) > 120 else self.slug
+        product.upc = self.upc
+        product.categories = self.categories
+        product.sales_rank = int(self.sales_rank) if self.sales_rank is not None else 0
+
+        if self.image is not None:
+            product.image = self.image
+            product.images = self.images
+        product.save()
+
+        print(product.id, product.asin, product.name)
+        self.save_categories()
+
+    def save_categories(self):
+        root_id = 1
+        categories = [c.strip() for c in self.categories.split('>')]
+        parent = None
+        for category in categories:
+            slug = self.create_slug(category)
+            if parent is not None:
+                slug = parent.slug + "-" + slug
+
+            try:
+                cc_node = Category.get(Category.slug == slug)
+            except:
+                try:
+                    cc_node = Category()
+                    cc_node.name = category
+                    cc_node.slug = slug
+                    cc_node.parent_id = parent.id if parent is not None else root_id
+                    cc_node.save()
+                except:
+                    pass
+
+            parent = cc_node
+
+            try:
+                cp = CategoryProduct()
+                cp.asin = self.asin
+                cp.category_id = cc_node.id
+                cp.save()
+            except:
+                pass
 
     def __str__(self):
         r = {}
