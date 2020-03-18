@@ -1,2 +1,5 @@
 selenium
 beautifulsoup4
+#For DataBase - sqlite
+Peewee >= 3.4.0
+PyMySql
