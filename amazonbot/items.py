@@ -193,9 +193,12 @@ class ProductItem(object):
         return details
 
     def parse_breadcrumbs(self):
-        categories = soup_utils.find_tag(self.soup, self.BREADCRUMBS_SELECTOR).text.strip()
-        categories = [c.strip() for c in categories.split('›')]
-        return " > ".join(categories)
+        try:
+            categories = soup_utils.find_tag(self.soup, self.BREADCRUMBS_SELECTOR).text.strip()
+            categories = [c.strip() for c in categories.split('›')]
+            return " > ".join(categories)
+        except:
+            return None
 
     def parse_images(self):
         image_tags = soup_utils.find_tags(self.soup, self.IMAGE_SELECTOR)
@@ -235,9 +238,14 @@ class ProductItem(object):
         product.save()
 
         print(product.id, product.asin, product.name)
+
         self.save_categories()
 
     def save_categories(self):
+
+        if self.categories is None:
+            return
+
         root_id = 1
         categories = [c.strip() for c in self.categories.split('>')]
         parent = None

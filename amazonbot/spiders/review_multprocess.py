@@ -17,7 +17,12 @@ class ReviewSpiderMultipleProcess(object):
 
     def worker(self, work_queue, browser, db=None):
         try:
-            for product in iter(work_queue.get, 'STOP'):
+            while True:
+                if work_queue.empty():
+                    print("Done %s" % current_process().name)
+                    break
+
+                product = work_queue.get()
                 try:
                     ReviewSpider(asin=product.asin, browser=browser, country=self.country, db=db).start_requests()
                     product.review_last_checked = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -33,7 +38,7 @@ class ReviewSpiderMultipleProcess(object):
     def start_requests(self):
 
         while True:
-            products = Product.select().where(Product.review_last_checked == None).limit(1000)
+            products = Product.select().where(Product.review_last_checked == None).limit(120)
 
             if len(products) == 0:
                 break
@@ -49,9 +54,14 @@ class ReviewSpiderMultipleProcess(object):
                 browser = get_browser(profile=None, disable_js=True, disable_image=True, headless=True)
                 p = Process(target=self.worker, args=(work_queue, browser, db))
                 p.start()
-                processes.append([p, browser,db])
+                processes.append([p, browser, db])
 
             for p in processes:
-                p[0].join()
-                p[1].close()
+                try:
+                    p[0].join()
+                except (KeyboardInterrupt, SystemExit):
+                    print('Exiting...Please wait!')
+                    p[0].terminate()
+                    p[0].join()
+
                 p[2].close()
