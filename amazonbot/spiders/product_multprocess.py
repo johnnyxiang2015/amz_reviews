@@ -1,9 +1,7 @@
-import datetime
 import traceback
 from multiprocessing import Process, Queue, current_process
 
 from amazonbot.spiders.product_spider import ProductSpider
-from amazonbot.spiders.review_spider import ReviewSpider
 from lib.logger import get_logger
 from lib.models import Product, init_database
 from lib.utils import get_browser

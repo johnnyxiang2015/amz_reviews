@@ -1,11 +1,7 @@
-from bs4 import BeautifulSoup
-
-from amazonbot.items import ReviewItem, ProductItem
-from lib import soup_utils
-from lib.constant import HTML_PARSER
+from amazonbot.items import ProductItem
 from lib.logger import get_logger
 from lib.models import Product
-from lib.utils import get_browser, get_page_content_from_url, get_review_url, get_product_url
+from lib.utils import get_browser, get_page_content_from_url, get_product_url
 
 
 class ProductSpider:

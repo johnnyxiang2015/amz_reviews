@@ -4,7 +4,7 @@ from amazonbot.items import ReviewItem
 from lib import soup_utils
 from lib.constant import HTML_PARSER
 from lib.logger import get_logger
-from lib.models import init_database, Review
+from lib.models import Review
 from lib.utils import get_browser, get_page_content_from_url, get_review_url
 
 REVIEW_SELECTOR = '#cm_cr-review_list .review'
