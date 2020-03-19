@@ -247,8 +247,10 @@ class ProductItem(object):
         product_attr.description = self.descriptions
         product_attr.upc = self.upc
         product_attr.categories = self.categories
-        product_attr.save()
         product_attr.images = self.images
+
+        product_attr.save()
+
         self.save_categories()
 
     def save_categories(self):
