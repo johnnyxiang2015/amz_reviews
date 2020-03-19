@@ -31,27 +31,14 @@ class Product(ESBaseModel):
     brand = CharField()
     price = DecimalField()
     review_last_checked = DateTimeField()
-
     sales_rank = IntegerField()
-
     categories = TextField()
-
-    weight = CharField()
     dimension = CharField()
-    size = CharField()
-    packageqty = CharField()
     image = CharField()
-    images = TextField()
     is_prime = IntegerField()
     binding = CharField()
-
-    width = DecimalField()
-    height = DecimalField()
-    length = DecimalField()
     slug = CharField()
 
-    description = TextField()
-    upc = CharField()
     related = CharField()
 
     class Meta:
@@ -79,7 +66,7 @@ class ProductAttr(ESBaseModel):
 
     width = DecimalField()
     height = DecimalField()
-    depth = DecimalField()
+    length = DecimalField()
 
     description = TextField()
     upc = CharField()
@@ -88,6 +75,7 @@ class ProductAttr(ESBaseModel):
     model = CharField()
     mpn = CharField()
     color = CharField()
+    flavor = CharField()
     parent_asin = CharField()
     features = TextField()
     manufacturer = CharField()

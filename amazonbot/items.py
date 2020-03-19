@@ -7,7 +7,7 @@ from peewee import DoesNotExist
 
 from lib import soup_utils
 from lib.constant import HTML_PARSER
-from lib.models import Review, Product, Category, CategoryProduct
+from lib.models import Review, Product, Category, CategoryProduct, ProductAttr
 
 
 class ReviewItem(object):
@@ -225,20 +225,30 @@ class ProductItem(object):
         product.name = self.name
         product.brand = self.brand
         product.price = self.price
-        product.description = self.feature_list
         product.dimension = self.dimensions
         product.slug = self.slug[0:120] if len(self.slug) > 120 else self.slug
-        product.upc = self.upc
         product.categories = self.categories
         product.sales_rank = int(self.sales_rank) if self.sales_rank is not None else 0
 
         if self.image is not None:
             product.image = self.image
-            product.images = self.images
+            # product.images = self.images
         product.save()
 
         print(product.id, product.asin, product.name)
 
+        try:
+            product_attr = ProductAttr.get(ProductAttr.asin == self.asin)
+        except:
+            product_attr = ProductAttr()
+            product_attr.asin = self.asin
+
+        product_attr.features = self.feature_list
+        product_attr.description = self.descriptions
+        product_attr.upc = self.upc
+        product_attr.categories = self.categories
+        product_attr.save()
+        product_attr.images = self.images
         self.save_categories()
 
     def save_categories(self):

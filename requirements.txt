@@ -1,3 +1,5 @@
+sumy
+vaderSentiment
 selenium
 beautifulsoup4
 #For DataBase - sqlite
